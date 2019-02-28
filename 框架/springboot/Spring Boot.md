@@ -545,9 +545,9 @@ public class Person {
 
 
 
-#### 4、@PropertySource&@ImportResource&@Bean
+#### 4、@PropertySource&@ImportResource& @Configuration和@Bean
 
-@**PropertySource**：加载指定的配置文件；
+@**PropertySource**：加载指定的properties配置文件；
 
 ```java
 /**
@@ -584,7 +584,7 @@ public class Person {
 
 
 
-@**ImportResource**：导入Spring的配置文件，让配置文件里面的内容生效；
+@**ImportResource**：导入**Spring的配置文件**，让配置文件里面的内容生效；
 
 Spring Boot里面没有Spring的配置文件，我们自己编写的配置文件，也不能自动识别；
 
@@ -635,7 +635,11 @@ public class MyAppConfig {
 }
 ```
 
-##4、配置文件占位符
+**结论：@Configuration和@Bean可以代替传统的XMl文件配置！！**
+
+
+
+## 4、配置文件占位符
 
 ### 1、随机数
 
@@ -650,14 +654,16 @@ ${random.int(10)}、${random.int[1024,65536]}
 ### 2、占位符获取之前配置的值，如果没有可以是用:指定默认值
 
 ```properties
-person.last-name=张三${random.uuid}
+##这里意思就是说设置属性的时候可以用到springBoot内置的随机数
+person.last-name=张三${random.uuid} 
 person.age=${random.int}
 person.birth=2017/12/15
 person.boss=false
 person.maps.k1=v1
 person.maps.k2=14
 person.lists=a,b,c
-person.dog.name=${person.hello:hello}_dog
+##这里的意思是说获取person.hello属性，冒号分隔符，意思是如果取不到，就直接指定为hello,结果是hello_dog
+person.dog.name=${person.hello:hello}_dog 
 person.dog.age=15
 ```
 
@@ -667,13 +673,32 @@ person.dog.age=15
 
 ### 1、多Profile文件
 
+profile 翻译，轮廓 侧面。。
+
 我们在主配置文件编写的时候，文件名可以是   application-{profile}.properties/yml
 
-默认使用application.properties的配置；
+我现在定义了两个profile
+
+![](../../images/搜狗截图20190228185149.png)
+
+**SpringBoot 会默认使用application.properties的配置；**
+
+在application.properties中，可以通过下面这种方式，指定使用哪个Profile文件
+
+```properties
+#这样就会激活application-dev.properties,使用application-dev.properties里面的内容
+spring.profile.active=dev
+```
+
+
 
 
 
 ### 2、yml支持多文档块方式
+
+除了上面那种方式之外，还可以使用yml的多文档块方式。用---分隔多个文档块
+
+最上面是document1,中间是document2,下面是document3...
 
 ```yml
 
@@ -704,6 +729,8 @@ spring:
 
 ### 3、激活指定profile
 
+有三种方式指定profile
+
 ​	1、在配置文件中指定  spring.profiles.active=dev
 
 ​	2、命令行：
@@ -730,7 +757,7 @@ springboot 启动会扫描以下位置的application.properties或者application
 
 –classpath:/
 
-优先级由高到底，高优先级的配置会覆盖低优先级的配置；
+**优先级由高到底，高优先级的配置会覆盖低优先级的配置；**
 
 SpringBoot会从这四个位置全部加载主配置文件；**互补配置**；
 
@@ -740,7 +767,9 @@ SpringBoot会从这四个位置全部加载主配置文件；**互补配置**；
 
 **项目打包好以后，我们可以使用命令行参数的形式，启动项目的时候来指定配置文件的新位置；指定配置文件和默认加载的这些配置文件共同起作用形成互补配置；**
 
-java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --spring.config.location=G:/application.properties
+java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar **--spring.config.location=G:/application.properties**
+
+
 
 ## 7、外部配置加载顺序
 
@@ -792,6 +821,8 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
 
 [参考官方文档](https://docs.spring.io/spring-boot/docs/1.5.9.RELEASE/reference/htmlsingle/#boot-features-external-config)
 
+
+
 ## 8、自动配置原理
 
 配置文件到底能写什么？怎么写？自动配置原理；
@@ -802,15 +833,17 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
 
 ### 1、**自动配置原理：**
 
-1）、SpringBoot启动的时候加载主配置类，开启了自动配置功能 ==@EnableAutoConfiguration==
+1）、SpringBoot启动的时候加载主配置类，开启了自动配置功能 @EnableAutoConfiguration
+
+@EnableAutoConfiguration是定义在@SpringBootApplication注解里面的子注解
 
 **2）、@EnableAutoConfiguration 作用：**
 
- -  利用EnableAutoConfigurationImportSelector给容器中导入一些组件？
+ -  利用EnableAutoConfigurationImportSelector选择器给容器中导入一些组件？
 
 - 可以查看selectImports()方法的内容；
 
-- List<String> configurations = getCandidateConfigurations(annotationMetadata,      attributes);获取候选的配置
+- List<String> configurations = getCandidateConfigurations(annotationMetadata,attributes);获取候选的配置
 
   - ```java
     SpringFactoriesLoader.loadFactoryNames()
@@ -822,7 +855,9 @@ java -jar spring-boot-02-config-02-0.0.1-SNAPSHOT.jar --server.port=8087  --serv
 
     
 
-**==将 类路径下  META-INF/spring.factories 里面配置的所有EnableAutoConfiguration的值加入到了容器中；==**
+将 类路径下  META-INF/spring.factories 里面配置的所有EnableAutoConfiguration的值加入到了容器中；![](D:\repo\笔记\图片\搜狗截图20190228191046.png)
+
+
 
 ```properties
 # Auto Configure
@@ -972,7 +1007,7 @@ public class HttpEncodingAutoConfiguration {
 
 
 
-5）、所有在配置文件中能配置的属性都是在xxxxProperties类中封装者‘；配置文件能配置什么就可以参照某个功能对应的这个属性类
+5）、所有在配置文件中能配置的属性都是在xxxxProperties类中封装的；配置文件能配置什么就可以参照某个功能对应的这个属性类
 
 ```java
 @ConfigurationProperties(prefix = "spring.http.encoding")  //从配置文件中获取指定的值和bean的属性进行绑定
@@ -1032,7 +1067,7 @@ xxxxProperties:封装配置文件中相关属性；
 
 我们怎么知道哪些自动配置类生效；
 
-**==我们可以通过启用  debug=true属性；来让控制台打印自动配置报告==**，这样我们就可以很方便的知道哪些自动配置类生效；
+我们可以通过启用  debug=true属性；来让控制台打印自动配置报告，这样我们就可以很方便的知道哪些自动配置类生效；
 
 ```java
 =========================
@@ -1215,7 +1250,7 @@ public abstract class LogFactory {
 		</dependency>
 ```
 
-**==SpringBoot能自动适配所有的日志，而且底层使用slf4j+logback的方式记录日志，引入其他框架的时候，只需要把这个框架依赖的日志框架排除掉即可；==**
+SpringBoot能自动适配所有的日志，而且底层使用slf4j+logback的方式记录日志，引入其他框架的时候，只需要把这个框架依赖的日志框架排除掉即可；
 
 ## 4、日志使用；
 
@@ -1398,9 +1433,9 @@ slf4j+log4j的方式；
 
 **1）、创建SpringBoot应用，选中我们需要的模块；**
 
-**2）、SpringBoot已经默认将这些场景配置好了，只需要在配置文件中指定少量配置就可以运行起来**
+**2）、SpringBoot已经默认将这些场景(sql,nosql,mq等等都有AutoConfiguration类来解析我们的配置内容) 我们只要配置好了，在配置文件中指定少量配置就可以运行起来**
 
-**3）、自己编写业务代码；**
+**3）、自己编写业务代码 和业务无关的配置可以不关心了**
 
 
 
@@ -1426,8 +1461,13 @@ public class ResourceProperties implements ResourceLoaderAware {
 
 
 
+WebMvcProperties.java
+
+WebMvcAuotConfiguration.java
+
 ```java
-	WebMvcAuotConfiguration：
+
+//下面这个方法就是添加资源映射
 		@Override
 		public void addResourceHandlers(ResourceHandlerRegistry registry) {
 			if (!this.resourceProperties.isAddMappings()) {
@@ -1496,9 +1536,7 @@ public class ResourceProperties implements ResourceLoaderAware {
 
 
 
-==1）、所有 /webjars/** ，都去 classpath:/META-INF/resources/webjars/ 找资源；==
-
-​	webjars：以jar包的方式引入静态资源；
+1）、所有 /webjars/** ，都去 classpath:/META-INF/resources/webjars/ 找资源；webjars：以jar包的方式引入静态资源；
 
 http://www.webjars.org/
 
@@ -1515,9 +1553,7 @@ localhost:8080/webjars/jquery/3.3.1/jquery.js
 		</dependency>
 ```
 
-
-
-==2）、"/**" 访问当前项目的任何资源，都去（静态资源的文件夹）找映射==
+2）、"/**" 访问当前项目的任何资源，都去（静态资源的文件夹）找映射==
 
 ```
 "classpath:/META-INF/resources/", 
@@ -1529,11 +1565,21 @@ localhost:8080/webjars/jquery/3.3.1/jquery.js
 
 localhost:8080/abc ===  去静态资源文件夹里面找abc
 
-==3）、欢迎页； 静态资源文件夹下的所有index.html页面；被"/**"映射；==
+3）、欢迎页； 静态资源文件夹下的所有index.html页面；被"/**"映射；==
 
-​	localhost:8080/   找index页面
+​	localhost:8080/   就会去找index页面
 
-==4）、所有的 **/favicon.ico  都是在静态资源文件下找；==
+4）、所有的 **/favicon.ico  都是在静态资源文件下找；自己创建一个favicon.ico然后放到上面那几个目录就好了
+
+![](../../images/搜狗截图20190228204942.png)
+
+可以自己修改
+
+```properties
+spring.resources.static.location=....
+```
+
+
 
 
 
@@ -1586,7 +1632,7 @@ public class ThymeleafProperties {
   	//
 ```
 
-只要我们把HTML页面放在classpath:/templates/，thymeleaf就能自动渲染；
+**只要我们把HTML页面放在classpath:/templates/，thymeleaf就能自动渲染；**
 
 使用：
 
@@ -1701,26 +1747,67 @@ Special tokens:
 
 https://docs.spring.io/spring-boot/docs/1.5.10.RELEASE/reference/htmlsingle/#boot-features-developing-web-applications
 
-### 1. Spring MVC auto-configuration
+### 1. Spring MVC 自动配置
 
 Spring Boot 自动配置好了SpringMVC
 
-以下是SpringBoot对SpringMVC的默认配置:**==（WebMvcAutoConfiguration）==**
+以下是SpringBoot对SpringMVC的默认配置**（WebMvcAutoConfiguration）**
 
 - Inclusion of `ContentNegotiatingViewResolver` and `BeanNameViewResolver` beans.
   - 自动配置了ViewResolver（视图解析器：根据方法的返回值得到视图对象（View），视图对象决定如何渲染（转发？重定向？））
   - ContentNegotiatingViewResolver：组合所有的视图解析器的；
-  - ==如何定制：我们可以自己给容器中添加一个视图解析器；自动的将其组合进来；==
+  - 如何定制：我们可以自己给容器中添加一个视图解析器；自动的将其组合进来；
 
-- Support for serving static resources, including support for WebJars (see below).静态资源文件夹路径,webjars
+  比如：
 
-- Static `index.html` support. 静态首页访问
-
-- Custom `Favicon` support (see below).  favicon.ico
+  ```java
+  @SpringBootApplication
+  public class Springboot04WebRestfulcrudApplication
+  {
+  
+      public static void main(String[] args)
+      {
+          SpringApplication.run(Springboot04WebRestfulcrudApplication.class, args);
+      }
+  
+      //@Bean返回的对象会自动添加到容器里面，这里就是我们给容器添加一个视图解析器，自动的把他组合进来。
+      @Bean
+      public ViewResolver viewResolver()
+      {
+          return new MyViewResolver();
+      }
+  
+      private static class MyViewResolver implements ViewResolver
+      {
+  
+          @Override
+          public View resolveViewName(String viewName, Locale locale) throws Exception
+          {
+              return null;
+          }
+      }
+  }
+  ```
 
   
 
+  
+
+- Support for serving static resources, including support for WebJars (see below).静态资源文件夹路径,webjars
+
+
+
+- Static `index.html` support. 静态首页访问
+
+
+
+- Custom `Favicon` support (see below).  favicon.ico
+
+
+
 - 自动注册了 of `Converter`, `GenericConverter`, `Formatter` beans.
+
+  因为http传递过来的都是文本内容，需要格式转换。
 
   - Converter：转换器；  public String hello(User user)：类型转换使用Converter
   - `Formatter`  格式化器；  2017.12.17===Date；
@@ -1733,7 +1820,11 @@ Spring Boot 自动配置好了SpringMVC
 		}
 ```
 
-​	==自己添加的格式化器转换器，我们只需要放在容器中即可==
+我们只需要配置spring.mvc.date-format=xx 就可以啦。。
+
+自己添加的格式化器转换器，我们只需要放在容器中即可，用@Bean注解。。
+
+
 
 - Support for `HttpMessageConverters` (see below).
 
@@ -1741,19 +1832,21 @@ Spring Boot 自动配置好了SpringMVC
 
   - `HttpMessageConverters` 是从容器中确定；获取所有的HttpMessageConverter；
 
-    ==自己给容器中添加HttpMessageConverter，只需要将自己的组件注册容器中（@Bean,@Component）==
+    自己给容器中添加HttpMessageConverter，只需要将自己的组件注册容器中（@Bean,@Component）
 
     
 
-- Automatic registration of `MessageCodesResolver` (see below).定义错误代码生成规则
+- Automatic registration of `MessageCodesResolver` (see below).**定义错误代码生成规则**
+
+
 
 - Automatic use of a `ConfigurableWebBindingInitializer` bean (see below).
 
-  ==我们可以配置一个ConfigurableWebBindingInitializer来替换默认的；（添加到容器）==
+  我们可以配置一个ConfigurableWebBindingInitializer来替换默认的；（添加到容器）
 
   ```
   初始化WebDataBinder；
-  请求数据=====JavaBean；
+  WebDataBinder的作用，将请求数据绑定到JavaBean；
   ```
 
 **org.springframework.boot.autoconfigure.web：web的所有自动场景；**
@@ -1774,7 +1867,7 @@ If you want to take complete control of Spring MVC, you can add your own `@Confi
     </mvc:interceptors>
 ```
 
-**==编写一个配置类（@Configuration），是WebMvcConfigurerAdapter类型；不能标注@EnableWebMvc==**;
+**编写一个配置类（@Configuration），是WebMvcConfigurerAdapter类型；不能标注@EnableWebMvc**;
 
 既保留了所有的自动配置，也能用我们扩展的配置；
 
@@ -1879,17 +1972,17 @@ public class DelegatingWebMvcConfiguration extends WebMvcConfigurationSupport {
 public class WebMvcAutoConfiguration {
 ```
 
-4）、@EnableWebMvc将WebMvcConfigurationSupport组件导入进来；
+4）、**@EnableWebMvc将WebMvcConfigurationSupport组件导入进来**；
 
 5）、导入的WebMvcConfigurationSupport只是SpringMVC最基本的功能；
 
 
 
-## 5、如何修改SpringBoot的默认配置
+## 5、修改SpringBoot的默认配置
 
 模式：
 
-​	1）、SpringBoot在自动配置很多组件的时候，先看容器中有没有用户自己配置的（@Bean、@Component）如果有就用用户配置的，如果没有，才自动配置；如果有些组件可以有多个（ViewResolver）将用户配置的和自己默认的组合起来；
+​	1）、SpringBoot在自动配置很多组件的时候，先看容器中有没有用户自己配置的（@Bean、@Component）**如果有就用用户配置的，如果没有，才自动配置**；如果有些组件可以有多个（ViewResolver）将用户配置的和自己默认的组合起来；
 
 ​	2）、在SpringBoot中会有非常多的xxxConfigurer帮助我们进行扩展配置
 
@@ -1935,7 +2028,7 @@ public class MyMvcConfig extends WebMvcConfigurerAdapter {
 
 2）、使用ResourceBundleMessageSource管理国际化资源文件
 
-3）、在页面使用fmt:message取出国际化内容
+3）、在页面使用**fmt:message**取出国际化内容
 
 
 
@@ -3483,7 +3576,7 @@ docker run --name some-mysql -e MYSQL_ROOT_PASSWORD=my-secret-pw -d mysql:tag --
 ## 1、JDBC
 
 ```xml
-<dependency>
+		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-jdbc</artifactId>
 		</dependency>
