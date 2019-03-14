@@ -16,3 +16,10 @@ redis是一个开源的key value存储系统，受到了广大互联网公司的
 
 从节点直接从master节点复制，他没有slot。
 
+
+当aof和rdb同时存在时，会加载aof文件，假如aof文件的语法有误，启动redis是会报错了，就如spring配置文件的bean错了，tomcat也会启动不了。rdb文件也是。
+如果aof或rdb文件语法有误，可以使用上面两条命令来修复。
+
+aof修复命令：redis-check-aof --fix appendonlly.aof
+
+rdb修复命令：redis-check-rdb--fix dump.rdb

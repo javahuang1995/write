@@ -1,5 +1,9 @@
 c01到c22
 
+![](..\..\..\笔记\images\搜狗截图20190313205607.png)
+
+https://www.cnblogs.com/happy-coder/p/6587092.html
+
 ## 同步的原则
 
 原子性，可见性，有序性。
