@@ -45,7 +45,7 @@ public static void main(String[] args) {
 			}
 			System.out.println(Thread.currentThread().getName());
 		}, 0, 500, TimeUnit.MILLISECONDS);
-		
+
 	}
 
 //5.每个线程都会维护自己的队列，如果一个线程自己队列里面没有线程了，他就会从其他线程的队列里面偷任务来执行
@@ -78,6 +78,8 @@ ThreadPoolExecutor
 看下构造函数
 
 > >corePoolSize 核心线程池数目大小 这个一般是你cpu有几个核，就定义成几个就完事了。
+IO密集型任务
+CPU密集型任务,coreSize不超过CPU核心数.
 > >
 > >maximumPoolSize 最大线程池数目大小
 > >
@@ -124,25 +126,25 @@ import java.util.concurrent.Future;
 public class T07_ParallelComputing {
    public static void main(String[] args) throws InterruptedException, ExecutionException {
       long start = System.currentTimeMillis();
-      getPrime(1, 200000); 
+      getPrime(1, 200000);
       long end = System.currentTimeMillis();
       System.out.println(end - start);
-      
+
       final int cpuCoreNum = 4;
-      
+
       ExecutorService service = Executors.newFixedThreadPool(cpuCoreNum);
-      
+
        //1到二十万数字分层四个任务，注意不是均分的，因为后面数字越大，计算时间越长，所以后面要分少一点。
       MyTask t1 = new MyTask(1, 80000); //1-5 5-10 10-15 15-20
       MyTask t2 = new MyTask(80001, 130000);
       MyTask t3 = new MyTask(130001, 170000);
       MyTask t4 = new MyTask(170001, 200000);
-      
+
       Future<List<Integer>> f1 = service.submit(t1);
       Future<List<Integer>> f2 = service.submit(t2);
       Future<List<Integer>> f3 = service.submit(t3);
       Future<List<Integer>> f4 = service.submit(t4);
-      
+
       start = System.currentTimeMillis();
       f1.get();
       f2.get();
@@ -151,36 +153,36 @@ public class T07_ParallelComputing {
       end = System.currentTimeMillis();
       System.out.println(end - start);
    }
-   
+
    static class MyTask implements Callable<List<Integer>> {
       int startPos, endPos;
-      
+
       MyTask(int s, int e) {
          this.startPos = s;
          this.endPos = e;
       }
-      
+
       @Override
       public List<Integer> call() throws Exception {
          List<Integer> r = getPrime(startPos, endPos);
          return r;
       }
-      
+
    }
-   
+
    static boolean isPrime(int num) {
       for(int i=2; i<=num/2; i++) {
          if(num % i == 0) return false;
       }
       return true;
    }
-   
+
    static List<Integer> getPrime(int start, int end) {
       List<Integer> results = new ArrayList<>();
       for(int i=start; i<=end; i++) {
          if(isPrime(i)) {results.add(i);}
       }
-      
+
       return results;
    }
 }
@@ -211,20 +213,20 @@ public class T12_ForkJoinPool {
 	static int[] nums = new int[1000000];
 	static final int MAX_NUM = 50000;
 	static Random r = new Random();
-	
+
 	static {
 		for(int i=0; i<nums.length; i++) {
 			nums[i] = r.nextInt(100);
 		}
-		
-		System.out.println(Arrays.stream(nums).sum()); //stream api 
+
+		System.out.println(Arrays.stream(nums).sum()); //stream api
 	}
-	
+
 	/*
-	static class AddTask extends RecursiveAction { 
-		
+	static class AddTask extends RecursiveAction {
+
 		int start, end;
-		
+
 		AddTask(int s, int e) {
 			start = s;
 			end = e;
@@ -232,36 +234,36 @@ public class T12_ForkJoinPool {
 
 		@Override
 		protected void compute() {
-			
+
 			if(end-start <= MAX_NUM) {
 				long sum = 0L;
 				for(int i=start; i<end; i++) sum += nums[i];
 				System.out.println("from:" + start + " to:" + end + " = " + sum);
 			} else {
-			
+
 				int middle = start + (end-start)/2;
-				
+
 				AddTask subTask1 = new AddTask(start, middle);
 				AddTask subTask2 = new AddTask(middle, end);
 				subTask1.fork();
 				subTask2.fork();
 			}
-			
-			
+
+
 		}
-		
+
 	}
 	*/
-	
+
     /**
     * 必须继承递归任务RecurisveTask，为什么叫做递归，因为就是把任务不断切分，这个过程就是递归的。
     * RecurisveTask是继承的顶层父类ForkJoinTask 才可以扔到ForkJoinPool里面。
     */
-	static class AddTask extends RecursiveTask<Long> { 
-		
+	static class AddTask extends RecursiveTask<Long> {
+
 		private static final long serialVersionUID = 1L;
 		int start, end;
-		
+
 		AddTask(int s, int e) {
 			start = s;
 			end = e;
@@ -269,40 +271,39 @@ public class T12_ForkJoinPool {
 
 		@Override
 		protected Long compute() {
-			
+
 			if(end-start <= MAX_NUM) {//如果小于五万，就不再划分子任务了，直接返回结果
 				long sum = 0L;
 				for(int i=start; i<end; i++) sum += nums[i];
 				return sum;
-			} 
-			
+			}
+
             //否则再划分任务。
 			int middle = start + (end-start)/2;
-			
+
             //划分task
 			AddTask subTask1 = new AddTask(start, middle);
 			AddTask subTask2 = new AddTask(middle, end);
-            
+
             //fork 然后 join
 			subTask1.fork();
 			subTask2.fork();
-			
+
 			return subTask1.join() + subTask2.join();
 		}
-		
+
 	}
-	
+
 	public static void main(String[] args) throws IOException {
 		ForkJoinPool fjp = new ForkJoinPool();
 		AddTask task = new AddTask(0, nums.length);
 		fjp.execute(task);
 		long result = task.join();
 		System.out.println(result);
-		
+
 		//System.in.read();
-		
+
 	}
 }
 
 ```
-
